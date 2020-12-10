@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>d3 Updating Bar Chart With Dropdown</title>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <style>
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333;
+        }
+
+        li {
+            float: left;
+        }
+
+        li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li a:hover:not(.active) {
+            background-color: #111;
+        }
+
+        .active {
+            background-color: #4CAF50;
+        }
+        body {
+            font: 10px sans-serif;
+
+        }
+        select {
+            display: block;
+
+        }
+        .bar {
+            fill: #721b1b;
+            opacity: 0.8;
+        }
+
+        .axis path
+        {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+
+        }
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+
+    </style>
+</head>
+<body style="background-color: powderblue" >
+<H1 style="color: #4CAF50"> CO2 Visualization Dashboard</H1>
+<ul>
+    <li><a href="index.html">Geospatial Visualization</a></li>
+    <li><a href="index1.html">Line Chart</a></li>
+    <li><a href="index3.html">Bar Chart</a></li>
+    <li><a href="index2.html">Area Chart</a></li>
+
+</ul>
+<h1> Bar Chart Visualization of CO2 for the countries </h1>
+<div id='container'></div>
+<script type="text/javascript">
+    var fileName = "https://raw.githubusercontent.com/KiranJoshi25/CO2-dataSet/main/co2_2017.csv";
+    var nutritionFields = ["1991","1992","1993","1994","1996","1997","1998","1999","2000", "2001", "2002", "2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017"];
+    d3.csv(fileName, function(error, data) {
+        var CountryMap = {};
+        data.forEach(function(d) {
+            var Country_map = d.Country;
+            CountryMap[Country_map] = [];
+            nutritionFields.forEach(function(field) {
+                CountryMap[Country_map].push( +d[field] );
+            });
+        });
+        Visualize(CountryMap);
+    });
+    var Visualize = function(CountryMap) {
+        var margin = { top: 30, right: 60, bottom: 30, left: 60 },
+            width  = 1000 - margin.left - margin.right,
+            height = 650 - margin.top  - margin.bottom;
+        var xScale = d3.scale.ordinal()
+            .domain(nutritionFields)
+            .rangeRoundBands([0, width], 0.1);
+        var yScale = d3.scale.linear()
+            .range([height, 0]);
+        var canvas = d3.select("#container")
+            .append("svg")
+            .attr("width",  width  + margin.left + margin.right)
+            .attr("height", height + margin.top  + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var x_axis = d3.svg.axis()
+            .scale(xScale)
+            .orient("bottom");
+        canvas.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(x_axis);
+        var y_axis = d3.svg.axis()
+            .scale(yScale)
+            .orient("left");
+        var Update_y_axis = canvas.append("g")
+            .attr("class", "y axis")
+            .call(y_axis);
+        Update_y_axis.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text("Emission metric ton");
+        var update_bar_chart = function(data) {
+            yScale.domain( d3.extent(data) );
+            Update_y_axis.call(y_axis);
+            var bars = canvas.selectAll(".bar").data(data);
+            bars.enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", function(d,i) { return xScale( nutritionFields[i] ); })
+                .attr("width", xScale.rangeBand())
+                .attr("y", function(d,i) { return yScale(d); })
+                .attr("height", function(d,i) { return height - yScale(d); });
+            bars
+                .transition().duration(250)
+                .attr("y", function(d,i) { return yScale(d); })
+                .attr("height", function(d,i) { return height - yScale(d); });
+            bars.exit().remove();
+        };
+        var Drop_down = function() {
+            var NewCountry = d3.select(this).property('value'),
+                newData   = CountryMap[NewCountry];
+            update_bar_chart(newData);
+        };
+        var countries = Object.keys(CountryMap).sort();
+        var dropdown = d3.select("#container")
+            .insert("select", "svg")
+            .on("change", Drop_down);
+        dropdown.selectAll("option")
+            .data(countries)
+            .enter().append("option")
+            .attr("value", function (d) { return d; })
+            .text(function (d) {
+                return d[0].toUpperCase() + d.slice(1,d.length); // capitalize 1st letter
+            });
+        var first_data = CountryMap[ countries[0] ];
+        update_bar_chart(first_data);
+    };
+</script>
+</body>
+</html>

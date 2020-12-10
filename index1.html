@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v4.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <title> Line Chart</title>
+<style>
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #333;
+    }
+
+    li {
+        float: left;
+    }
+
+    li a {
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+    }
+
+    li a:hover:not(.active) {
+        background-color: #111;
+    }
+
+    .active {
+        background-color: #4CAF50;
+    }
+</style>
+</head>
+<body style="background-color: powderblue">
+<H1 style="color: #4caf50"> CO2 Visualization Dashboard</H1>
+<ul>
+    <li><a href="index.html">Geospatial Visualization</a></li>
+    <li><a href="index1.html">Line Chart</a></li>
+    <li><a href="index3.html">Bar Chart</a></li>
+    <li><a href="index2.html">Area Chart</a></li>
+</ul>
+<h1>Line Chart for top 5 countries with most CO2 emission</h1>
+<label for="selectButton">Select a Country</label><select id="selectButton"></select>
+<div id="container" ></div>
+<script>
+    var margin = {top: 10, right: 30, bottom: 30, left: 60},
+        width = 800 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+    var svg = d3.select("#container")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+    d3.csv("https://raw.githubusercontent.com/KiranJoshi25/CO2-dataSet/main/all_data.csv", function(data) {
+        var Top_countris = ["China","India","United States","Japan","Russian Federation"]
+        d3.select("#selectButton")
+            .selectAll('myOptions')
+            .data(Top_countris)
+            .enter()
+            .append('option')
+            .text(function (d) { return d; })
+            .attr("value", function (d) { return d; })
+        var Vis_colour = d3.scaleLinear()
+            .domain(d3.extent(data, function(d) { return d.Emissions; }))
+            .range(d3.schemeSet2);
+        var x = d3.scaleLinear()
+            .domain(d3.extent(data, function(d) { return d.Year; }))
+            .range([ 0, width ]);
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+        var y = d3.scaleLinear()
+            .domain([0, d3.max(data, function(d) { return +d.Emissions; })])
+            .range([ height, 0 ]);
+        svg.append("g")
+            .call(d3.axisLeft(y));
+        var line = svg
+            .append('g')
+            .append("path")
+            .datum(data.filter(function(d){return d.Country==Top_countris[0]}))
+            .attr("d", d3.line()
+
+                .x(function(d) { return x(d.year) })
+                .y(function(d) { return y(+d.Emissions) })
+            )
+            .attr("stroke", function(d){ return Vis_colour("valueA") })
+            .style("stroke-width", 4)
+            .style("fill", "none")
+        function update(selectedGroup) {
+            var data_filter_var = data.filter(function(d){return d.Country==selectedGroup})
+            line
+                .datum(data_filter_var)
+                .transition()
+                .duration(1000)
+                .attr("d", d3.line()
+                    .x(function(d) { return x(d.Year) })
+                    .y(function(d) { return y(+d.Emissions) })
+                )
+                .attr("stroke", function(d){ return Vis_colour(selectedGroup) })
+        }
+        d3.select("#selectButton").on("change", function(d) {
+            var selectedOption = d3.select(this).property("value")
+            update(selectedOption)
+        })
+
+    })
+</script>
+</body>
+</html>

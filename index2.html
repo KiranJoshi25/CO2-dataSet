@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Area Chart</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<style>
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #333;
+    }
+
+    li {
+        float: left;
+    }
+
+    li a {
+        display: block;
+        color: white;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+    }
+
+    li a:hover:not(.active) {
+        background-color: #111;
+    }
+
+    .active {
+        background-color: #4CAF50;
+    }
+</style>
+<body style="background-color: powderblue">
+<H1 style="color: #4CAF50"> CO2 Visualization Dashboard</H1>
+<ul>
+
+    <li><a href="index.html">Geospatial Visualization</a></li>
+    <li><a href="index1.html">Line Chart</a></li>
+    <li><a href="index3.html">Bar Chart</a></li>
+    <li><a href="index2.html">Area Chart</a></li>
+
+</ul>
+<h1>
+    Area Chart for top 5 countries CO2 emission
+</h1>
+<div>
+    <svg id="main" width=100% height=1200 viewBox="0 0 1000 800"/>
+</div>
+<script>
+    let svg = d3.select('svg#main');
+    let margins = 30;
+    let width = 500 -  margins;
+    let height = 300 - margins;
+
+
+    let stackColors = ['#2b4303',
+        '#3b5411',
+        '#5b7732',
+        '#748641',
+        '#99cc00']
+
+
+    const keys = ['China', 'India', 'USA','Russia','Japan'];
+
+    const loadData = d3.csv("https://raw.githubusercontent.com/KiranJoshi25/CO2-dataSet/main/Area.csv",
+        function(d) {
+            return {
+                China: Number(d.China),
+                India: Number(d.India),
+                USA: Number(d.USA),
+                Russia: Number(d.Russia),
+                Japan: Number(d.Japan)}
+        })
+
+    loadData.then(data =>{
+
+        let stack = d3.stack()
+            .keys(keys);
+        let stackedSeries = stack(data);
+
+        let yScale = d3.scaleLinear()
+            .domain([0,
+                d3.max(stackedSeries, d => d3.max(d, d => d[1]))])
+            .range([height, margins]);
+
+        let area = d3.area()
+            .x(function(d, i) {
+                console.log(d)
+                return i *30;
+            })
+            .y0(function(d) {
+                return yScale(d[0]);
+            })
+            .y1(function(d) {
+                return yScale(d[1]);
+            });
+        svg.selectAll('path')
+            .data(stackedSeries)
+            .enter()
+            .append('path')
+            .style('fill', function(d, i) {
+                return stackColors[i];
+            })
+            .attr('d', area);
+
+    });
+    let lineLegend = svg.selectAll(".lineLegend").data(keys)
+        .enter().append("g")
+        .attr("class","lineLegend")
+        .attr("transform", function (d,i) {
+            return "translate(" + width + "," + (i*20)+")";
+        });
+
+    lineLegend.append("text").text(function (d) {return d;})
+        .attr("transform", "translate(15,15)"); //align texts with boxes
+
+    lineLegend.append("rect")
+        .attr("fill", function (d, i) {return stackColors[i]; })
+        .attr("transform", "translate(0,5)")
+        .attr("width", 10).attr("height", 10);
+
+</script>
+</body>
+</html>
